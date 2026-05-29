@@ -1,0 +1,27 @@
+name: oxidesse
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.12.13
+  - pip
+  - ase=3.28.0
+  - numpy=2.4.4
+  - pandas=3.0.3
+  - scipy=1.17.1
+  - matplotlib=3.10.9
+  - pymatgen=2026.5.4
+  - spglib=2.7.0
+  - tqdm=4.67.3
+  - monty=2026.2.18
+  - pip:
+      - mp-api==0.46.1
+      - fire==0.7.1
+      - emmet-core==0.86.4
+      - pydantic==2.13.4
+      - pyarrow==24.0.0
+      # SevenNet is the MLP backend used in this project. If this line fails in
+      # your CUDA/PyTorch environment, install SevenNet by following the official
+      # documentation: https://github.com/MDIL-SNU/SevenNet
+      - sevenn==0.12.1
