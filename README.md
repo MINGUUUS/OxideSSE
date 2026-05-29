@@ -1,5 +1,3 @@
-20260529 initial commit test
-
 # 🧪 OxideSSE
 
 **OxideSSE** is a Python toolkit for oxide solid-state electrolyte research, with a focus on LLZO-derived garnet-type oxide materials. It provides reusable workflows for structure relaxation, stability screening, LAMMPS trajectory analysis, diffusivity calculation, and Arrhenius extrapolation.
