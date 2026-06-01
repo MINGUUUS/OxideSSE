@@ -486,7 +486,7 @@ OxideSSE/
 │   ├── io.py
 │   └── optimization.py
 ├── examples/
-├── tests/
+├── assets/
 ├── environment.yml
 ├── pyproject.toml
 └── README.md
