@@ -7,13 +7,8 @@ Recommended contents:
 ```text
 examples/
 ├── structures/
-│   ├── LLZO.cif
-│   └── POSCAR_LLZO
+│   ├── Tetragonal_LLCO.cif
 └── lammps_run/
     ├── dump.traj
-    ├── structure.data
-    ├── log.lammps
-    └── README.md
+    └── structure.data
 ```
-
-Please keep files small enough for GitHub. Avoid uploading large production trajectories, raw screening datasets, cache directories, or unpublished structures that should remain private.

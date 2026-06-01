@@ -1,6 +1,6 @@
 # 🧪 OxideSSE
 
-**OxideSSE** is a Python toolkit for oxide solid-state electrolyte research, with a focus on LLZO-derived garnet-type oxide materials. It provides reusable workflows for structure relaxation, stability screening, LAMMPS trajectory analysis, diffusivity calculation, and Arrhenius extrapolation.
+**OxideSSE** is a Python toolkit for any type of oxide solid-state electrolyte (SSE) research. It provides reusable workflows for structure relaxation, stability screening, LAMMPS trajectory analysis, diffusivity calculation, and Arrhenius extrapolation. This repository will provide the example with a focus on Li7La3Zr2O12(LLZO)-derived garnet-type oxide materials. 
 
 ```python
 import oxidesse as sse
@@ -8,31 +8,19 @@ import oxidesse as sse
 
 ## ✨ Main features
 
-- ⚙️ Geometry optimization using ASE-compatible MLP calculators.
+- ⚙️ Geometry optimization using ASE-compatible machine learning potential (MLP) calculators.
 - 🧱 Binary-oxide-referenced formation energy with MLP-recalculated reference energies.
 - 📉 Energy above hull using Materials Project entries with MLP-recalculated entry energies.
-- 🚶 Li-ion MSD and diffusivity analysis from a single LAMMPS simulation folder.
+- 🚶 Li-ion MSD and diffusivity analysis from a LAMMPS simulation outputs.
 - 🔥 Arrhenius fitting, 298 K diffusivity extrapolation, and ionic conductivity estimation.
 
 ---
 
 ## 📦 Installation
 
-### Option 1. Install directly from GitHub
+### Option 1. Clone and install in editable mode
 
-```bash
-pip install git+https://github.com/MINGUUUS/OxideSSE.git
-```
-
-To install a specific release tag:
-
-```bash
-pip install git+https://github.com/MINGUUUS/OxideSSE.git@v0.1.15
-```
-
-### Option 2. Clone and install in editable mode
-
-Use this option if you want to modify the source code, add example files, or develop new functions.
+Use this option if you want to use the functions and modify the source code.
 
 ```bash
 git clone https://github.com/MINGUUUS/OxideSSE.git
@@ -46,7 +34,9 @@ Check the installation:
 python -c "import oxidesse as sse; print(sse.__version__)"
 ```
 
-### Option 3. Reproducible conda environment
+### Option 2. Reproducible conda environment
+
+For better reproducibility, you can create a conda environment from the provided `environment.yml` file. The `environment.yml` file records the versions used during package testing.
 
 ```bash
 git clone https://github.com/MINGUUUS/OxideSSE.git
@@ -58,84 +48,31 @@ pip install -e .
 
 ---
 
-## 🧠 SevenNet requirement
+## 🧠 SevenNet installation and requirement
 
-OxideSSE uses machine-learning interatomic potentials for **geometry optimization** and **stability analysis**. The default workflow is based on **SevenNet**, but SevenNet is **not installed automatically** by OxideSSE because GPU, CUDA, PyTorch, and model compatibility can depend strongly on the user's computing environment.
+OxideSSE uses machine-learning potentials (MLP) for **geometry optimization** and **stability analysis**. The default workflow is based on **SevenNet**, but SevenNet is **not installed automatically** by OxideSSE because GPU, CUDA, PyTorch, and model compatibility can depend strongly on the user's computing environment.
 
-Install SevenNet separately before using SevenNet-based calculators:
+Install SevenNet separately before using SevenNet-based calculators by referring official documents:
 
 - https://github.com/MDIL-SNU/SevenNet
 - https://sevennet.readthedocs.io/en/latest/
 
-### Supported calculator names
+Supported calculator names : `7net-0`(default), `7net-l3i5`, `7net-omat`, `7net-mf-ompa`, `7net-omni`
 
-| Calculator name | Notes |
-|---|---|
-| `7net-0` | Default calculator. |
-| `7net-l3i5` | SevenNet model name passed to `SevenNetCalculator`. |
-| `7net-omat` | SevenNet model name passed to `SevenNetCalculator`. |
-| `7net-mf-ompa` | Modal model. OxideSSE currently uses `modal="mpa"` by default; edit the calculator settings directly if another modal is needed. |
-| `7net-omni` | Modal model. A modal must be specified by the user; edit the calculator settings or pass a manually constructed ASE calculator. |
-
-Default:
-
-```python
-calculator="7net-0"
-```
+> **Tip:** `7net-mf-ompa` and `7net-omni` are multi-modal MLP. They need specific modality.
 
 Advanced users can also pass any already-created ASE calculator object directly to OxideSSE functions.
 
 ---
 
-## 🧪 Tested environment
-
-OxideSSE was tested in the following environment:
-
-| Component | Tested version |
-|---|---:|
-| Python | 3.12.13 |
-| ASE | 3.28.0 |
-| pymatgen | 2026.5.4 |
-| mp-api | 0.46.1 |
-| NumPy | 2.4.4 |
-| pandas | 3.0.3 |
-| SciPy | 1.17.1 |
-| matplotlib | 3.10.9 |
-| spglib | 2.7.0 |
-| tqdm | 4.67.3 |
-| fire | 0.7.1 |
-| monty | 2026.2.18 |
-| emmet-core | 0.86.4 |
-| pydantic | 2.13.4 |
-| pyarrow | 24.0.0 |
-| SevenNet | 0.12.1, installed separately |
-
----
-
 ## 🔑 Materials Project API key
 
-Formation energy and energy-above-hull calculations require access to the Materials Project API. Do not hard-code your API key in public scripts or notebooks.
+Stability calculations (formation energy and energy-above-hull calculations) require access to the Materials Project API.
 
 Set it as an environment variable:
 
 ```bash
 export MP_API_KEY="YOUR_MP_API_KEY"
-```
-
-Example for formation energy:
-
-```python
-form = sse.compute_binary_oxide_formation_energy(
-    structure="Li7La3Zr2O12.cif",
-)
-```
-
-Example for energy above hull:
-
-```python
-hull = sse.compute_energy_above_hull_mlp(
-    structure="Li7La3Zr2O12.cif",
-)
 ```
 
 You can also pass the API key directly:
@@ -154,7 +91,7 @@ hull = sse.compute_energy_above_hull_mlp(
 
 ---
 
-# 🚀 Python API
+# 🚀 Usage with Python API
 
 ## 1. ⚙️ `sse.optimize_structure()`
 
@@ -164,17 +101,18 @@ Optimize a CIF or POSCAR/CONTCAR-style structure file using an ASE-compatible ca
 
 ```python
 result = sse.optimize_structure(
-    structure="input.cif",
+    structure="./examples/structures/Tetragonal_LLCO.cif",
+    output_dir="./optimized"
 )
 ```
 
-### Important variables
+### Variables
 
 | Variable | Description |
 |---|---|
 | `structure` | Input structure file. CIF, POSCAR, and CONTCAR-style files are supported. |
-| `calculator` | ASE calculator object or supported calculator name. Default: `"7net-0"`. |
 | `output_dir` | Directory where the optimized CIF and optimization log are saved. |
+| `calculator` | ASE calculator object or supported calculator name. Default: `"7net-0"`. |
 | `output_filename` | Name of the optimized structure file. If `None`, OxideSSE uses `opt_<input>.cif`. |
 | `fmax` | Force convergence criterion in eV/Å. |
 | `max_steps` | Maximum number of optimizer steps. |
@@ -183,8 +121,8 @@ result = sse.optimize_structure(
 
 ### Output files
 
-- Optimized CIF file, for example `optimized/opt_input.cif`
-- Optimization log file, for example `optimized/input.opt.log`
+- Optimized CIF file, for example `optimized/Tetragonal_LLCO.cif`
+- Optimization log file, for example `optimized/Tetragonal_LLCO.opt.log`
 
 ### Result attributes
 
@@ -202,7 +140,7 @@ result.message
 
 ## 2. 🧱 `sse.compute_binary_oxide_formation_energy()`
 
-Compute the formation energy of an oxide structure using binary oxide references. OxideSSE automatically balances the target composition against binary oxide references, fetches representative structures from Materials Project, recalculates their energies using the selected MLP calculator, and computes the formation energy.
+Compute the **formation energy** of an oxide structure using binary oxide references. OxideSSE automatically balances the target composition against binary oxide references, fetches representative structures from Materials Project, recalculates their energies using the selected MLP calculator, and computes the formation energy. For the details, refer this paper. [Ong et al., Nat. Commun., 9, 3800 (2018)](https://www.nature.com/articles/s41467-018-06322-x)
 
 Example composition balance:
 
@@ -214,11 +152,11 @@ Li7La3Zr2O12 = 3.5 Li2O + 1.5 La2O3 + 2 ZrO2
 
 ```python
 result = sse.compute_binary_oxide_formation_energy(
-    structure="input.cif",
+    structure="./examples/structures/Tetragonal_LLCO.cif",
 )
 ```
 
-### Important variables
+### Variables
 
 | Variable | Description |
 |---|---|
@@ -230,9 +168,9 @@ result = sse.compute_binary_oxide_formation_energy(
 | `device` | Calculator device option. |
 | `append` | If `True`, append to an existing CSV file. |
 
-### Output CSV
+### Output files
 
-The CSV contains the target formula, target energy, formation energy, formation energy per atom, and the binary oxide references used in the calculation.
+- CSV file contains the target formula, target energy, formation energy, formation energy per atom, and the binary oxide references used in the calculation.
 
 ### Result attributes
 
@@ -250,33 +188,33 @@ result.references
 
 ## 3. 📉 `sse.compute_energy_above_hull_mlp()`
 
-Compute energy above hull using Materials Project entries as phase diagram references, while replacing MP energies with MLP-recalculated energies. OxideSSE uses MP structures and compositions, but the phase diagram is built from MLP energies.
+Compute **energy above hull** using Materials Project entries as phase diagram references. The MP energies are re-caclulated using MLP for the consistent fidelity.
 
 ### Minimal example
 
 ```python
 result = sse.compute_energy_above_hull_mlp(
-    structure="input.cif",
+    structure="./examples/structures/Tetragonal_LLCO.cif",
 )
 ```
 
-### Important variables
+### Variables
 
 | Variable | Description |
 |---|---|
 | `structure` | Input structure file. CIF and POSCAR/CONTCAR-style files are supported. |
 | `calculator` | ASE calculator object or supported calculator name. Default: `"7net-0"`. |
 | `api_key` | Materials Project API key. If `None`, OxideSSE reads `MP_API_KEY`. |
-| `thermo_type` | MP thermo entry set. Supported values include `"R2SCAN"`, `"GGA_GGA+U"`, `"GGA_GGA+U_R2SCAN"`, `"GGAU"`, and `"GGAU_R2SCAN"`. |
+| `thermo_type` | MP thermo entry set. Supported values include `"R2SCAN"`, `"GGA_GGA+U"`, `"GGA_GGA+U_R2SCAN"`. |
 | `output_csv` | CSV file for the hull result. |
 | `cache_dir` | Directory where MLP-recalculated MP entry energies are cached. |
-| `use_cache` | If `True`, reuse cached MLP energies for previously evaluated MP entries. |
+| `use_cache` | If `True`, reuse cached MLP energies for previously evaluated MP entries for saving the calculation time. |
 | `device` | Calculator device option. |
 | `append` | If `True`, append to an existing CSV file. |
 
-### Output CSV
+### Output files
 
-The CSV includes the formula, chemical system, thermo type, target MLP energy, energy above hull, number of MP entries used, failed entries, and cache path.
+- CSV file includes the formula, chemical system, thermo type, target MLP energy, energy above hull, number of MP entries used, failed entries, and cache path.
 
 ### Result attributes
 
@@ -297,22 +235,23 @@ result.csv_path
 
 ## 4. 🚶 `sse.compute_diffusivity_from_lammps()`
 
-Analyze one LAMMPS simulation folder, convert the LAMMPS trajectory into structures, compute MSD curves, estimate diffusivity, perform error analysis, and save plots and CSV files.
+Analyze **LAMMPS outputs**, convert the LAMMPS trajectory into structures, compute MSD curves, estimate diffusivity, perform error analysis, and save plots and CSV files.
 
 ### Minimal example
 
 ```python
 result = sse.compute_diffusivity_from_lammps(
-    simulation_dir="lammps_run",
+    simulation_dir="./examples/lammps_run",
     dump_file="dump.traj",
     data_file="structure.data",
     timestep_fs=1.0,
     step_skip=500,
     temperature=1000,
+    output_dir="./diffusivity_results"
 )
 ```
 
-### Important variables
+### Variables
 
 | Variable | Description |
 |---|---|
@@ -322,21 +261,21 @@ result = sse.compute_diffusivity_from_lammps(
 | `timestep_fs` | LAMMPS MD timestep in femtoseconds. For example, `1.0` means one LAMMPS step is 1 fs. |
 | `step_skip` | Dump interval in MD steps. If frames are saved every 500 steps and `timestep_fs=1.0`, the frame spacing is 500 fs = 0.5 ps. |
 | `temperature` | MD temperature in K. |
+| `save_poscars` | If `True`, save converted trajectory frames as POSCAR files. Default = `False` |
+| `save_plot` | If `True`, save the MSD plot. Default = `True`|
+| `plot_other_species` | If `True`, include non-primary species in the MSD plot. Default = `True`|
 | `species` | Primary mobile species. Default: `"Li"`. |
 | `output_dir` | Directory for MSD plot and CSV files. |
-| `save_poscars` | If `True`, save converted trajectory frames as POSCAR files. |
-| `save_plot` | If `True`, save the MSD plot. |
 | `output_csv` | Summary CSV path. |
 | `msd_csv` | Time-resolved MSD CSV path. |
-| `plot_other_species` | If `True`, include non-primary species in the MSD plot. |
 | `oxidized_species` | Optional oxidation-state mapping for conductivity-related calculations, for example `{"Li": "Li+"}`. |
 
 ### Output files
 
-- `msd_<species>_<temperature>K.png`
-- `diffusivity_summary.csv`
-- `msd_by_species.csv`
-- Optional converted POSCAR files if `save_poscars=True`
+- MSD plot, for example `diffusivity_results/msd_<species>_<temperature>K.png`
+- Diffusivity analysis results, for example `diffusivity_results/diffusivity_summary.csv`
+- MSD raw data in each species, for example `diffusivity_results/msd_by_species.csv`
+- Optional converted POSCAR files if `save_poscars=True`, for example `examples/lammps_run/traj_to_POSCARs`
 
 ### Result attributes
 
@@ -355,31 +294,38 @@ result.species_results
 
 ## 5. 🔥 `sse.plot_arrhenius()`
 
-Fit Arrhenius behavior from temperature-dependent diffusivity data, save an Arrhenius plot, extrapolate diffusivity to 298 K, and optionally estimate 298 K ionic conductivity.
+Fit Arrhenius behavior from temperature-dependent diffusivity data, save an Arrhenius plot, extrapolate diffusivity to 298 K, and estimate 298 K ionic conductivity.
 
 ### Minimal example
 
 ```python
 data = {
-    600: {"diffusivity": 1.2e-7, "std": 0.2e-7},
-    700: {"diffusivity": 5.0e-7, "std": 0.6e-7},
-    800: {"diffusivity": 1.8e-6, "std": 0.2e-6},
+    1000: {'diffusivity': 7.70E-06, 'std': 4.90E-07},
+    900: {'diffusivity': 5.19E-06, 'std': 3.62E-07},
+    800: {'diffusivity': 3.05E-06, 'std': 2.35E-07},
+    700: {'diffusivity': 1.70E-06, 'std': 1.55E-07},
+    600: {'diffusivity': 1.17E-06, 'std': 1.20E-07},
 }
 
-result = sse.plot_arrhenius(data=data)
+result = sse.plot_arrhenius(
+    data=data,
+    name="t-LLCO",
+    structure="./examples/structures/Tetragonal_LLCO.cif"
+    output_dir="./arrhenius_results"
+)
 ```
 
-### Important variables
+### Variables
 
 | Variable | Description |
 |---|---|
 | `data` | Dictionary containing temperature, diffusivity, and standard deviation. Required format: `{T: {"diffusivity": D, "std": std}}`. |
+| `name` | Label for the measured diffusivity data. |
+| `structure` | Structure file used to compute 298 K ionic conductivity via the Nernst-Einstein relation. |
 | `output_dir` | Directory where the plot and CSV are saved. |
+| `extrapolate_298K` | If `True`, plot the fitted line to 298 K and report 298 K diffusivity. |
 | `output_filename` | Arrhenius plot filename. |
 | `output_csv` | Summary CSV filename. Set `None` to skip CSV output. |
-| `name` | Label for the measured diffusivity data. |
-| `extrapolate_298K` | If `True`, plot the fitted line to 298 K and report 298 K diffusivity. |
-| `structure` | Structure file used to compute 298 K ionic conductivity via the Nernst-Einstein relation. |
 | `specie` | Oxidized species string, usually `"Li+"`. |
 | `conductivity_factor_298K` | Optional precomputed conversion factor from diffusivity to conductivity. If provided, `structure` is not required for conductivity. |
 
@@ -404,22 +350,22 @@ result.csv_path
 
 ---
 
-# 🖥️ Command-line interface
+# 🖥️ Usage with command-line interface (CLI)
 
-OxideSSE provides a Fire-based command-line interface after installation:
+OxideSSE provides a usage of `Fire`-based command-line interface.
 
 ```bash
 oxidesse --help
 ```
 
-## Geometry optimization
+## 1. ⚙️ Geometry optimization
 
 ```bash
 oxidesse optimize-structure \
   --structure input.cif
 ```
 
-Common options:
+Options:
 
 - `--structure`: input CIF/POSCAR path
 - `--calculator`: calculator name, default `7net-0`
@@ -430,21 +376,14 @@ Common options:
 - `--cell_relax`: whether to relax the cell
 - `--device`: calculator device option
 
-Batch optimize structures in a directory:
-
-```bash
-oxidesse optimize-structures \
-  --input_dir cifs
-```
-
-## Formation energy
+## 2. 🧱 Formation energy
 
 ```bash
 oxidesse formation-energy \
   --structure input.cif
 ```
 
-Common options:
+Options:
 
 - `--structure`: input oxide structure
 - `--calculator`: calculator name, default `7net-0`
@@ -453,14 +392,14 @@ Common options:
 - `--device`: calculator device option
 - `--append`: append to existing CSV
 
-## Energy above hull
+## 3. 📉 Energy above hull
 
 ```bash
 oxidesse energy-above-hull \
   --structure input.cif
 ```
 
-Common options:
+Options:
 
 - `--structure`: input structure
 - `--calculator`: calculator name, default `7net-0`
@@ -471,11 +410,11 @@ Common options:
 - `--use_cache`: reuse cached MLP entry energies
 - `--append`: append to existing CSV
 
-## Diffusivity from LAMMPS
+## 4. 🚶 Diffusivity from LAMMPS
 
 ```bash
 oxidesse diffusivity \
-  --simulation_dir lammps_run \
+  --simulation_dir ./examples/lammps_run \
   --dump_file dump.traj \
   --data_file structure.data \
   --timestep_fs 1.0 \
@@ -483,7 +422,7 @@ oxidesse diffusivity \
   --temperature 1000
 ```
 
-Common options:
+Options:
 
 - `--simulation_dir`: LAMMPS simulation directory
 - `--dump_file`: LAMMPS dump file
@@ -497,16 +436,16 @@ Common options:
 - `--save_plot`: save MSD plot
 - `--plot_other_species`: include non-primary species in plot
 
-## Arrhenius fitting
+## 5. 🔥 Arrhenius fitting
 
 For command-line use, pass data as a Python-style dictionary string:
 
 ```bash
 oxidesse arrhenius \
-  --data '{600: {"diffusivity": 1.2e-7, "std": 0.2e-7}, 700: {"diffusivity": 5.0e-7, "std": 0.6e-7}, 800: {"diffusivity": 1.8e-6, "std": 0.2e-6}}'
+  --data '{1000: {'diffusivity': 7.70E-06, 'std': 4.90E-07}, 900: {'diffusivity': 5.19E-06, 'std': 3.62E-07}, 800: {'diffusivity': 3.05E-06, 'std': 2.35E-07}, 700: {'diffusivity': 1.70E-06, 'std': 1.55E-07}, 600: {'diffusivity': 1.17E-06, 'std': 1.20E-07}}'
 ```
 
-Common options:
+Options:
 
 - `--data`: temperature-diffusivity dictionary
 - `--name`: dataset label
@@ -517,35 +456,6 @@ Common options:
 - `--structure`: structure used for conductivity conversion
 - `--specie`: oxidized mobile species, for example `Li+`
 - `--conductivity_factor_298K`: optional precomputed conductivity conversion factor
-
----
-
-# 📁 Example data
-
-The `examples/` directory is intended for small files that users can run immediately after cloning the repository. Recommended contents are:
-
-```text
-examples/
-├── structures/
-│   ├── LLZO.cif
-│   └── POSCAR_LLZO
-└── lammps_run/
-    ├── dump.traj
-    ├── structure.data
-    ├── log.lammps
-    └── README.md
-```
-
-Recommended files to add:
-
-- A small CIF file for geometry optimization and stability examples.
-- A small POSCAR file for users who prefer VASP-style structure input.
-- One short LAMMPS dump trajectory, ideally only a small number of frames.
-- The matching LAMMPS data file for the dump trajectory.
-- A short `README.md` inside `examples/lammps_run/` describing `timestep_fs`, `step_skip`, temperature, unit style, and species mapping.
-- Optional small CSV file with temperature, diffusivity, and standard deviation values for Arrhenius testing.
-
-Avoid uploading large production trajectories, unpublished screening datasets, cache directories, or raw Materials Project data.
 
 ---
 
