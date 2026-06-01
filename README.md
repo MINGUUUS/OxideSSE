@@ -14,6 +14,8 @@ import oxidesse as sse
 - 🚶 Li-ion MSD and diffusivity analysis from a LAMMPS simulation outputs.
 - 🔥 Arrhenius fitting, 298 K diffusivity extrapolation, and ionic conductivity estimation.
 
+![ToC](assets/ToC.png)
+
 ---
 
 ## 📦 Installation
