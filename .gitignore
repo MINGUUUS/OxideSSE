@@ -1,5 +1,4 @@
 __pycache__/
-*.pyc
 *.py[cod]
 *.egg-info/
 .eggs/
@@ -13,6 +12,3 @@ dist/
 .oxidesse_cache/
 *.log
 traj_to_POSCARs/
-*.traj
-*.lammpstrj
-*.dump

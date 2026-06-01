@@ -21,7 +21,3 @@ dependencies:
       - emmet-core==0.86.4
       - pydantic==2.13.4
       - pyarrow==24.0.0
-      # SevenNet is the MLP backend used in this project. If this line fails in
-      # your CUDA/PyTorch environment, install SevenNet by following the official
-      # documentation: https://github.com/MDIL-SNU/SevenNet
-      - sevenn==0.12.1
