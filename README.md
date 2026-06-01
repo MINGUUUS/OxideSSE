@@ -50,18 +50,28 @@ pip install -e .
 
 ## 🧠 SevenNet installation and requirement
 
-OxideSSE uses machine-learning potentials (MLP) for **geometry optimization** and **stability analysis**. The default workflow is based on **SevenNet**, but SevenNet is **not installed automatically** by OxideSSE because GPU, CUDA, PyTorch, and model compatibility can depend strongly on the user's computing environment.
+OxideSSE utilizes machine-learning potentials for **geometry optimization** and **stability analysis**. The default workflow is based on **SevenNet**, but SevenNet is **not installed automatically** by OxideSSE because GPU, CUDA, PyTorch, and model compatibility can depend strongly on the user's computing environment.
 
-Install SevenNet separately before using SevenNet-based calculators by referring official documents:
+> Install SevenNet separately before using SevenNet-based calculators by referring official documents: 
+> - https://github.com/MDIL-SNU/SevenNet
+> - https://sevennet.readthedocs.io/en/latest/
 
-- https://github.com/MDIL-SNU/SevenNet
-- https://sevennet.readthedocs.io/en/latest/
+We have tested SevenNet and PyTorch version as like below with CUDA 13.2 GPU:
+| Component | Tested version |
+|---|---:|
+| sevenn | 0.12.1 |
+| torch | 2.11.0 |
+| torch-geometric | 2.7.0 |
+| torchaudio | 2.11.0 |
+| torchvision | 0.26.0 |
+
+---
 
 Supported calculator names : `7net-0`(default), `7net-l3i5`, `7net-omat`, `7net-mf-ompa`, `7net-omni`
 
-> **Tip:** `7net-mf-ompa` and `7net-omni` are multi-modal MLP. They need specific modality.
+**Tip:** `7net-mf-ompa` and `7net-omni` are multi-modal MLP. They need specific modality.
 
-Advanced users can also pass any already-created ASE calculator object directly to OxideSSE functions.
+- Advanced users can also pass any already-created ASE calculator object directly to OxideSSE functions.
 
 ---
 
@@ -75,16 +85,16 @@ Set it as an environment variable:
 export MP_API_KEY="YOUR_MP_API_KEY"
 ```
 
-You can also pass the API key directly:
+You can also pass the API key directly in function:
 
 ```python
 form = sse.compute_binary_oxide_formation_energy(
-    structure="Li7La3Zr2O12.cif",
+    structure="input.cif",
     api_key="YOUR_MP_API_KEY",
 )
 
 hull = sse.compute_energy_above_hull_mlp(
-    structure="Li7La3Zr2O12.cif",
+    structure="input.cif",
     api_key="YOUR_MP_API_KEY",
 )
 ```
