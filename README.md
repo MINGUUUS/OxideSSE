@@ -1,4 +1,4 @@
-# 🧪 OxideSSE
+# OxideSSE
 
 **OxideSSE** is a Python toolkit for any type of oxide solid-state electrolyte (SSE) research. It provides reusable workflows for structure relaxation, stability screening, LAMMPS trajectory analysis, diffusivity calculation, and Arrhenius extrapolation. This repository will provide the example with a focus on Li7La3Zr2O12(LLZO)-derived garnet-type oxide materials. 
 
@@ -8,11 +8,11 @@ import oxidesse as sse
 
 ## ✨ Main features
 
-- ⚙️ Geometry optimization using ASE-compatible machine learning potential (MLP) calculators.
-- 🧱 Binary-oxide-referenced formation energy with MLP-recalculated reference energies.
-- 📉 Energy above hull using Materials Project entries with MLP-recalculated entry energies.
-- 🚶 Li-ion MSD, diffusivity, and ionic conductivity analysis from LAMMPS simulation outputs.
-- 🔥 Arrhenius fitting, 298 K diffusivity extrapolation, and ionic conductivity estimation.
+- Geometry optimization using ASE-compatible machine learning interatomic potential (MLIP) calculators.
+- Binary-oxide-referenced formation energy with MLIP-recalculated reference energies.
+- Energy above hull using Materials Project entries with MLIP-recalculated entry energies.
+- Li-ion MSD, diffusivity, and ionic conductivity analysis from LAMMPS simulation outputs.
+- Arrhenius fitting, 298 K diffusivity extrapolation, and ionic conductivity estimation.
 
 ![ToC](assets/ToC.png)
 
@@ -58,7 +58,7 @@ OxideSSE utilizes machine-learning interatomic potentials for **geometry optimiz
 > - https://github.com/MDIL-SNU/SevenNet
 > - https://sevennet.readthedocs.io/en/latest/
 
-We have tested SevenNet and PyTorch version as like below with CUDA 13.2 GPU:
+We have tested SevenNet and PyTorch version as like below with on GPU of CUDA version=13.2:
 | Component | Tested version |
 |---|---:|
 | sevenn | 0.12.1 |
@@ -71,7 +71,7 @@ We have tested SevenNet and PyTorch version as like below with CUDA 13.2 GPU:
 
 Supported calculator names : `7net-0`(default), `7net-l3i5`, `7net-omat`, `7net-mf-ompa`, `7net-omni`
 
-**Tip:** `7net-mf-ompa` and `7net-omni` are multi-modal MLP. They need specific modality.
+**Tip:** `7net-mf-ompa` and `7net-omni` are multi-modal MLIP. They need specific modality.
 
 - Advanced users can also pass any already-created ASE calculator object directly to OxideSSE functions.
 
@@ -95,7 +95,7 @@ form = sse.compute_binary_oxide_formation_energy(
     api_key="YOUR_MP_API_KEY",
 )
 
-hull = sse.compute_energy_above_hull_mlp(
+hull = sse.compute_energy_above_hull(
     structure="input.cif",
     api_key="YOUR_MP_API_KEY",
 )
@@ -152,7 +152,7 @@ result.message
 
 ## 2. 🧱 `sse.compute_binary_oxide_formation_energy()`
 
-Compute the **formation energy** of an oxide structure using binary oxide references. OxideSSE automatically balances the target composition against binary oxide references, fetches representative structures from Materials Project, recalculates their energies using the selected MLP calculator, and computes the formation energy. For the details, refer this paper. [Ong et al., Nat. Commun., 9, 3800 (2018)](https://www.nature.com/articles/s41467-018-06322-x)
+Compute the **formation energy** of an oxide structure using binary oxide references. OxideSSE automatically balances the target composition against binary oxide references, fetches representative structures from Materials Project, recalculates their energies using the selected MLIP calculator, and computes the formation energy. For the details, refer this paper. [Ong et al., Nat. Commun., 9, 3800 (2018)](https://www.nature.com/articles/s41467-018-06322-x)
 
 Example composition balance:
 
@@ -198,14 +198,14 @@ result.references
 
 ---
 
-## 3. 📉 `sse.compute_energy_above_hull_mlp()`
+## 3. 📉 `sse.compute_energy_above_hull()`
 
-Compute **energy above hull** using Materials Project entries as phase diagram references. The MP energies are re-caclulated using MLP for the consistent fidelity.
+Compute **energy above hull** using Materials Project entries as phase diagram references. The MP energies are re-caclulated using MLIP for the consistent fidelity.
 
 ### Minimal example
 
 ```python
-result = sse.compute_energy_above_hull_mlp(
+result = sse.compute_energy_above_hull(
     structure="./examples/structures/Tetragonal_LLCO.cif",
 )
 ```
@@ -219,14 +219,14 @@ result = sse.compute_energy_above_hull_mlp(
 | `api_key` | Materials Project API key. If `None`, OxideSSE reads `MP_API_KEY`. |
 | `thermo_type` | MP thermo entry set. Supported values include `"GGA_GGA+U"`, `"R2SCAN"`, and `"GGA_GGA+U_R2SCAN"`. Default: `"GGA_GGA+U"`. |
 | `output_csv` | CSV file for the hull result. |
-| `cache_dir` | Directory where MLP-recalculated MP entry energies are cached. |
-| `use_cache` | If `True`, reuse cached MLP energies for previously evaluated MP entries for saving the calculation time. |
+| `cache_dir` | Directory where MLIP-recalculated MP entry energies are cached. |
+| `use_cache` | If `True`, reuse cached MLIP energies for previously evaluated MP entries for saving the calculation time. |
 | `device` | Calculator device option. |
 | `append` | If `True`, append to an existing CSV file. |
 
 ### Output files
 
-- CSV file includes the formula, chemical system, thermo type, target MLP energy, energy above hull, number of MP entries used, failed entries, and cache path.
+- CSV file includes the formula, chemical system, thermo type, target MLIP energy, energy above hull, number of MP entries used, failed entries, and cache path.
 
 ### Result attributes
 
@@ -424,7 +424,7 @@ Options:
 - `--thermo_type`: `GGA_GGA+U` (default), `GGAU`, `R2SCAN`, `GGA_GGA+U_R2SCAN`, or `GGAU_R2SCAN`
 - `--output_csv`: CSV output path
 - `--cache_dir`: cache directory
-- `--no_use_cache`: disable reuse of cached MLP entry energies
+- `--no_use_cache`: disable reuse of cached MLIP entry energies
 - `--no_append`: overwrite CSV instead of appending to an existing file
 
 ## 4. 🚶 Diffusivity from LAMMPS
@@ -438,8 +438,6 @@ oxidesse diffusivity \
   --step_skip 500 \
   --temperature 1000
 ```
-
-The `diffusivity` command also reports ionic conductivity for the primary species when an oxidation state is available. For Li diffusion, `Li+` is assumed by default. The LAMMPS `data_file` is used for the cell volume and mobile-ion concentration, so no separate structure file is required.
 
 Options:
 
@@ -470,7 +468,7 @@ oxidesse arrhenius \
 Options:
 
 - `--data`: temperature-diffusivity dictionary
-- `--name`: dataset label
+- `--name`: dataset label, title of arrhenius plot
 - `--output_dir`: output directory
 - `--output_filename`: plot filename
 - `--output_csv`: CSV filename
@@ -510,7 +508,7 @@ If you use OxideSSE in your research, please cite:
 
 ```bibtex
 @misc{jeon2026unlocking,
-  title = {Unlocking the Li7M3X2O12 Garnet Electrolyte Landscape with Universal Machine Learning Interatomic Potentials},
+  title = {Harnessing Universal Machine Learning Interatomic Potentials for Unlocking the Li7M3X2O12 Garnet Electrolyte Landscape},
   author = {Jeon, Mingyu and Lee, Jae-Kwan and Artrith, Nongnuch and Urban, Alexander and Lee, Byungju and Kim, Jieun and Kim, Donghun and Lee, Jung-Hoon},
   year = {2026},
   archivePrefix = {arXiv},

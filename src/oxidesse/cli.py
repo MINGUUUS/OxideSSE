@@ -9,7 +9,7 @@ from typing import Any
 from .arrhenius import plot_arrhenius
 from .diffusion import compute_diffusivity_from_lammps
 from .formation_energy import compute_binary_oxide_formation_energy
-from .hull import compute_energy_above_hull_mlp
+from .hull import compute_energy_above_hull
 from .optimization import optimize_structure, optimize_structures
 
 
@@ -220,7 +220,7 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.command == "energy-above-hull":
-        result = compute_energy_above_hull_mlp(
+        result = compute_energy_above_hull(
             structure=args.structure,
             calculator=args.calculator,
             api_key=args.api_key,

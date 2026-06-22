@@ -131,7 +131,7 @@ def _ensure_entry_structure(entry, api_key: str):
     return doc[0].structure
 
 
-def compute_energy_above_hull_mlp(
+def compute_energy_above_hull(
     structure: str | Path | Any,
     calculator: str | Any = "7net-0",
     api_key: str | None = None,
