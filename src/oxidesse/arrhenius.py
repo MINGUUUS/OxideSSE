@@ -65,8 +65,9 @@ def get_conductivity_conversion_factor(structure, specie: str = "Li+", temperatu
     from pymatgen.core.periodic_table import Specie
 
     if not hasattr(structure, "composition"):
-        from pymatgen.core import Structure
-        structure = Structure.from_file(str(structure))
+        from .io import read_structure
+
+        structure = read_structure(structure)
 
     df_sp = specie if isinstance(specie, Specie) else Specie.from_str(specie)
     z = df_sp.oxi_state

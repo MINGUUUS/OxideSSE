@@ -18,6 +18,10 @@ class SpeciesDiffusivity:
     diffusivity_components: list[float] | None = None
     n_jump: float | None = None
     n_jump_component: list[int] | list[float] | None = None
+    conductivity_mS_cm: float | None = None
+    conductivity_std_mS_cm: float | None = None
+    conductivity_conversion_factor: float | None = None
+    oxidized_specie: str | None = None
     fit_start_time_ps: float | None = None
     fit_end_time_ps: float | None = None
     msd_start: float | None = None
@@ -35,6 +39,7 @@ class DiffusivityResult:
     msd_csv_path: Path | None = None
     summary_csv_path: Path | None = None
     plot_path: Path | None = None
+    conductivity_source_file: Path | None = None
 
     @property
     def diffusivity(self) -> float | None:
@@ -48,6 +53,20 @@ class DiffusivityResult:
         for item in self.species_results:
             if item.species == self.primary_species:
                 return item.diffusivity_std
+        return None
+
+    @property
+    def conductivity(self) -> float | None:
+        for item in self.species_results:
+            if item.species == self.primary_species:
+                return item.conductivity_mS_cm
+        return None
+
+    @property
+    def conductivity_std(self) -> float | None:
+        for item in self.species_results:
+            if item.species == self.primary_species:
+                return item.conductivity_std_mS_cm
         return None
 
 
@@ -183,7 +202,7 @@ def _analyze_species(
     )
 
 
-def _get_aimd_error_summary(difs, oxidized_specie: str) -> dict[str, Any]:
+def _get_aimd_error_summary(difs, oxidized_specie: str | None) -> dict[str, Any]:
     """Compute AIMD error-analysis summary for one species.
 
     The original notebooks used
@@ -242,9 +261,10 @@ def compute_diffusivity_from_lammps(
     Parameters
     ----------
     oxidized_species
-        Optional mapping used for conductivity/error analysis, e.g. ``{"Li": "Li+"}``.
-        If omitted, only the primary species Li is treated as ``Li+``. Non-Li
-        species are analyzed with neutral element symbols and no conductivity conversion.
+        Optional oxidation-state mapping used for conductivity conversion, e.g.
+        ``{"Li": "Li+"}``. If omitted, the primary species Li is treated as
+        ``Li+``. Non-Li species remain neutral unless explicitly provided with an
+        oxidation state such as ``{"Na": "Na+"}`` or ``{"O": "O2-"}``.
     spec_dict
         Optional diffusion fitting controls applied to every analyzed species. If omitted,
         OxideSSE uses element-specific defaults: larger MSD thresholds for mobile Li
@@ -258,6 +278,11 @@ def compute_diffusivity_from_lammps(
 
     output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    from .arrhenius import get_conductivity_conversion_factor
+
+    simulation_dir_resolved = Path(simulation_dir).expanduser().resolve()
+    conductivity_source_file = (simulation_dir_resolved / data_file).expanduser().resolve()
 
     structures, timesteps, poscar_dir = lammps_dump_to_structures(
         simulation_dir=simulation_dir,
@@ -293,7 +318,7 @@ def compute_diffusivity_from_lammps(
             # The diffusion analyzer itself should always receive the neutral element
             # symbol (e.g., "Li", "Ce", "La", "O") because the trajectory structures
             # are usually not oxidation-state decorated. Oxidized species strings are
-            # only needed when converting Li diffusivity to ionic conductivity via the
+            # only needed when converting diffusivity to ionic conductivity via the
             # Nernst-Einstein relation. Passing neutral non-Li symbols such as "Ce" or
             # "O" to Specie.from_str() would raise "Invalid species string", so non-Li
             # species default to None unless the user explicitly provides an oxidation
@@ -301,12 +326,33 @@ def compute_diffusivity_from_lammps(
             oxidized_specie = oxidized_species.get(sp)
             if oxidized_specie is None and sp == species and sp == "Li":
                 oxidized_specie = "Li+"
+
+            # If an oxidation state is available, the AIMD summary can also report
+            # conductivity-related quantities. OxideSSE additionally computes the
+            # primary-species conductivity below using the LAMMPS data-file structure
+            # so no separate structure input is required.
             error_summary = _get_aimd_error_summary(difs, oxidized_specie=oxidized_specie)
 
             diffusivity_std = error_summary.get("diffusivity_standard_deviation")
             diffusivity_relative_std = error_summary.get("diffusivity_relative_standard_deviation")
             n_jump = error_summary.get("n_jump")
             n_jump_component = error_summary.get("n_jump_component")
+            conductivity_factor = None
+            conductivity_mS_cm = None
+            conductivity_std_mS_cm = None
+            if sp == species and oxidized_specie is not None:
+                # Reuse the same Nernst-Einstein conversion methodology as the
+                # Arrhenius module. The conductivity structure is derived from the
+                # LAMMPS data file already required for diffusivity analysis, so users
+                # do not need to provide a separate structure file.
+                conductivity_factor = get_conductivity_conversion_factor(
+                    structures[0],
+                    specie=oxidized_specie,
+                    temperature=temperature,
+                )
+                conductivity_mS_cm = float(conductivity_factor * float(difs.diffusivity))
+                if diffusivity_std is not None:
+                    conductivity_std_mS_cm = float(conductivity_factor * float(diffusivity_std))
             components = getattr(difs, "diffusivity_components", None)
             lower_idx = getattr(difs, "lower_bound_index", None)
             upper_idx = getattr(difs, "upper_bound_index", None)
@@ -321,6 +367,10 @@ def compute_diffusivity_from_lammps(
                     diffusivity_components=None if components is None else list(np.asarray(components, dtype=float)),
                     n_jump=_as_float_or_none(n_jump),
                     n_jump_component=_as_python_list(n_jump_component),
+                    conductivity_mS_cm=conductivity_mS_cm,
+                    conductivity_std_mS_cm=conductivity_std_mS_cm,
+                    conductivity_conversion_factor=conductivity_factor,
+                    oxidized_specie=oxidized_specie,
                     fit_start_time_ps=fit_start,
                     fit_end_time_ps=fit_end,
                     msd_start=float(msd[0]),
@@ -343,6 +393,8 @@ def compute_diffusivity_from_lammps(
                         coeff = np.polyfit(x_fit, y_fit, 1)
                         ax.plot(x_fit, coeff[0] * x_fit + coeff[1], linewidth=2, linestyle="-", alpha=0.8, label="Li fit")
         except Exception as exc:
+            if sp == species:
+                raise
             species_results.append(SpeciesDiffusivity(species=sp, diffusivity=float("nan")))
             print(f"[{sp}] diffusivity analysis skipped: {exc}")
 
@@ -396,6 +448,11 @@ def compute_diffusivity_from_lammps(
                 "msd_start_A2": r.msd_start,
                 "msd_middle_A2": r.msd_middle,
                 "msd_last_A2": r.msd_last,
+                "conductivity_source_file": str(conductivity_source_file),
+                "oxidized_specie": r.oxidized_specie or "",
+                "conductivity_conversion_factor_mS_cm_per_cm2_s": r.conductivity_conversion_factor,
+                "conductivity_mS_cm": r.conductivity_mS_cm,
+                "conductivity_std_mS_cm": r.conductivity_std_mS_cm,
                 "plot_path": str(plot_path) if plot_path else "",
             }
             rows.append(row)
@@ -410,4 +467,5 @@ def compute_diffusivity_from_lammps(
         msd_csv_path=msd_csv_path,
         summary_csv_path=summary_csv_path,
         plot_path=plot_path,
+        conductivity_source_file=conductivity_source_file,
     )

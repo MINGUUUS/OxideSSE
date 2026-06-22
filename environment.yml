@@ -17,7 +17,6 @@ dependencies:
   - monty=2026.2.18
   - pip:
       - mp-api==0.46.1
-      - fire==0.7.1
       - emmet-core==0.86.4
       - pydantic==2.13.4
       - pyarrow==24.0.0

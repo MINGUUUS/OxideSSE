@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oxidesse"
-version = "0.1.15"
+version = "0.1.18"
 description = "Python toolkit for oxide solid-state electrolyte optimization, stability screening, diffusion analysis, and Arrhenius fitting."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -23,7 +23,6 @@ dependencies = [
   "mp-api>=0.46,<0.47",
   "spglib>=2.7,<3",
   "tqdm>=4.67,<5",
-  "fire>=0.7,<0.8",
 ]
 
 [project.scripts]

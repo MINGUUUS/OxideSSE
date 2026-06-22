@@ -1,6 +1,6 @@
 """OxideSSE: tools for oxide solid-state electrolyte screening."""
 
-__version__ = "0.1.15"
+__version__ = "0.1.18"
 
 
 from .arrhenius import ArrheniusResult, fit_arrhenius, plot_arrhenius

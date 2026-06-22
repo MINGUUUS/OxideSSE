@@ -11,7 +11,7 @@ import oxidesse as sse
 - ⚙️ Geometry optimization using ASE-compatible machine learning potential (MLP) calculators.
 - 🧱 Binary-oxide-referenced formation energy with MLP-recalculated reference energies.
 - 📉 Energy above hull using Materials Project entries with MLP-recalculated entry energies.
-- 🚶 Li-ion MSD and diffusivity analysis from a LAMMPS simulation outputs.
+- 🚶 Li-ion MSD, diffusivity, and ionic conductivity analysis from LAMMPS simulation outputs.
 - 🔥 Arrhenius fitting, 298 K diffusivity extrapolation, and ionic conductivity estimation.
 
 ![ToC](assets/ToC.png)
@@ -217,7 +217,7 @@ result = sse.compute_energy_above_hull_mlp(
 | `structure` | Input structure file. CIF and POSCAR/CONTCAR-style files are supported. |
 | `calculator` | ASE calculator object or supported calculator name. Default: `"7net-0"`. |
 | `api_key` | Materials Project API key. If `None`, OxideSSE reads `MP_API_KEY`. |
-| `thermo_type` | MP thermo entry set. Supported values include `"R2SCAN"`, `"GGA_GGA+U"`, `"GGA_GGA+U_R2SCAN"`. |
+| `thermo_type` | MP thermo entry set. Supported values include `"GGA_GGA+U"`, `"R2SCAN"`, and `"GGA_GGA+U_R2SCAN"`. Default: `"GGA_GGA+U"`. |
 | `output_csv` | CSV file for the hull result. |
 | `cache_dir` | Directory where MLP-recalculated MP entry energies are cached. |
 | `use_cache` | If `True`, reuse cached MLP energies for previously evaluated MP entries for saving the calculation time. |
@@ -247,7 +247,7 @@ result.csv_path
 
 ## 4. 🚶 `sse.compute_diffusivity_from_lammps()`
 
-Analyze **LAMMPS outputs**, convert the LAMMPS trajectory into structures, compute MSD curves, estimate diffusivity, perform error analysis, and save plots and CSV files.
+Analyze **LAMMPS outputs**, convert the LAMMPS trajectory into structures, compute MSD curves, estimate diffusivity, calculate primary-species ionic conductivity using the LAMMPS data-file structure, perform error analysis, and save plots and CSV files.
 
 ### Minimal example
 
@@ -269,7 +269,7 @@ result = sse.compute_diffusivity_from_lammps(
 |---|---|
 | `simulation_dir` | Directory containing the LAMMPS simulation files. |
 | `dump_file` | LAMMPS dump trajectory file. Absolute paths and paths relative to `simulation_dir` are supported. |
-| `data_file` | LAMMPS data file. Absolute paths and paths relative to `simulation_dir` are supported. |
+| `data_file` | LAMMPS data file. Absolute paths and paths relative to `simulation_dir` are supported. This file is also used to obtain the cell volume and ion concentration for conductivity conversion. |
 | `timestep_fs` | LAMMPS MD timestep in femtoseconds. For example, `1.0` means one LAMMPS step is 1 fs. |
 | `step_skip` | Dump interval in MD steps. If frames are saved every 500 steps and `timestep_fs=1.0`, the frame spacing is 500 fs = 0.5 ps. |
 | `temperature` | MD temperature in K. |
@@ -280,12 +280,12 @@ result = sse.compute_diffusivity_from_lammps(
 | `output_dir` | Directory for MSD plot and CSV files. |
 | `output_csv` | Summary CSV path. |
 | `msd_csv` | Time-resolved MSD CSV path. |
-| `oxidized_species` | Optional oxidation-state mapping for conductivity-related calculations, for example `{"Li": "Li+"}`. |
+| `oxidized_species` | Optional oxidation-state mapping for conductivity conversion, for example `{"Li": "Li+"}`. If omitted and `species="Li"`, Li is treated as `Li+`. |
 
 ### Output files
 
 - MSD plot, for example `diffusivity_results/msd_<species>_<temperature>K.png`
-- Diffusivity analysis results, for example `diffusivity_results/diffusivity_summary.csv`
+- Diffusivity and conductivity analysis results, for example `diffusivity_results/diffusivity_summary.csv`
 - MSD raw data in each species, for example `diffusivity_results/msd_by_species.csv`
 - Optional converted POSCAR files if `save_poscars=True`, for example `examples/lammps_run/traj_to_POSCARs`
 
@@ -299,6 +299,9 @@ result.primary_species
 result.plot_path
 result.summary_csv_path
 result.msd_csv_path
+result.conductivity
+result.conductivity_std
+result.conductivity_source_file
 result.species_results
 ```
 
@@ -322,10 +325,12 @@ data = {
 result = sse.plot_arrhenius(
     data=data,
     name="t-LLCO",
-    structure="./examples/structures/Tetragonal_LLCO.cif"
+    structure="./examples/structures/Tetragonal_LLCO.cif",
     output_dir="./arrhenius_results"
 )
 ```
+
+`structure` may also be a LAMMPS data file, for example `structure="./examples/lammps_run/system.data"`.
 
 ### Variables
 
@@ -333,7 +338,7 @@ result = sse.plot_arrhenius(
 |---|---|
 | `data` | Dictionary containing temperature, diffusivity, and standard deviation. Required format: `{T: {"diffusivity": D, "std": std}}`. |
 | `name` | Label for the measured diffusivity data. |
-| `structure` | Structure file used to compute 298 K ionic conductivity via the Nernst-Einstein relation. |
+| `structure` | Structure file used to compute 298 K ionic conductivity via the Nernst-Einstein relation. Supported formats: CIF, POSCAR/CONTCAR, and LAMMPS data file. |
 | `output_dir` | Directory where the plot and CSV are saved. |
 | `extrapolate_298K` | If `True`, plot the fitted line to 298 K and report 298 K diffusivity. |
 | `output_filename` | Arrhenius plot filename. |
@@ -364,7 +369,7 @@ result.csv_path
 
 # 🖥️ Usage with command-line interface (CLI)
 
-OxideSSE provides a usage of `Fire`-based command-line interface.
+OxideSSE provides an `argparse`-based command-line interface.
 
 ```bash
 oxidesse --help
@@ -385,7 +390,7 @@ Options:
 - `--output_filename`: optimized CIF filename
 - `--fmax`: force convergence criterion
 - `--max_steps`: maximum optimization steps
-- `--cell_relax`: whether to relax the cell
+- `--no_cell_relax`: disable cell relaxation and optimize atomic positions only
 - `--device`: calculator device option
 
 ## 2. 🧱 Formation energy
@@ -402,7 +407,7 @@ Options:
 - `--api_key`: Materials Project API key, optional if `MP_API_KEY` is set
 - `--output_csv`: CSV output path
 - `--device`: calculator device option
-- `--append`: append to existing CSV
+- `--no_append`: overwrite CSV instead of appending to an existing file
 
 ## 3. 📉 Energy above hull
 
@@ -416,11 +421,11 @@ Options:
 - `--structure`: input structure
 - `--calculator`: calculator name, default `7net-0`
 - `--api_key`: Materials Project API key, optional if `MP_API_KEY` is set
-- `--thermo_type`: `R2SCAN`, `GGA_GGA+U`, `GGA_GGA+U_R2SCAN`, `GGAU`, or `GGAU_R2SCAN`
+- `--thermo_type`: `GGA_GGA+U` (default), `GGAU`, `R2SCAN`, `GGA_GGA+U_R2SCAN`, or `GGAU_R2SCAN`
 - `--output_csv`: CSV output path
 - `--cache_dir`: cache directory
-- `--use_cache`: reuse cached MLP entry energies
-- `--append`: append to existing CSV
+- `--no_use_cache`: disable reuse of cached MLP entry energies
+- `--no_append`: overwrite CSV instead of appending to an existing file
 
 ## 4. 🚶 Diffusivity from LAMMPS
 
@@ -434,6 +439,8 @@ oxidesse diffusivity \
   --temperature 1000
 ```
 
+The `diffusivity` command also reports ionic conductivity for the primary species when an oxidation state is available. For Li diffusion, `Li+` is assumed by default. The LAMMPS `data_file` is used for the cell volume and mobile-ion concentration, so no separate structure file is required.
+
 Options:
 
 - `--simulation_dir`: LAMMPS simulation directory
@@ -445,8 +452,9 @@ Options:
 - `--species`: primary mobile species, default `Li`
 - `--output_dir`: output directory
 - `--save_poscars`: save converted POSCAR frames
-- `--save_plot`: save MSD plot
-- `--plot_other_species`: include non-primary species in plot
+- `--no_save_plot`: disable MSD plot saving
+- `--no_plot_other_species`: plot only the primary species
+- `--oxidized_specie`: oxidized primary species for conductivity conversion, for example `Li+`
 
 ## 5. 🔥 Arrhenius fitting
 
@@ -454,7 +462,9 @@ For command-line use, pass data as a Python-style dictionary string:
 
 ```bash
 oxidesse arrhenius \
-  --data '{1000: {'diffusivity': 7.70E-06, 'std': 4.90E-07}, 900: {'diffusivity': 5.19E-06, 'std': 3.62E-07}, 800: {'diffusivity': 3.05E-06, 'std': 2.35E-07}, 700: {'diffusivity': 1.70E-06, 'std': 1.55E-07}, 600: {'diffusivity': 1.17E-06, 'std': 1.20E-07}}'
+  --data '{1000: {"diffusivity": 7.70E-06, "std": 4.90E-07}, 900: {"diffusivity": 5.19E-06, "std": 3.62E-07}, 800: {"diffusivity": 3.05E-06, "std": 2.35E-07}, 700: {"diffusivity": 1.70E-06, "std": 1.55E-07}, 600: {"diffusivity": 1.17E-06, "std": 1.20E-07}}' \
+  --name t-LLCO \
+  --structure input.cif
 ```
 
 Options:
@@ -465,7 +475,7 @@ Options:
 - `--output_filename`: plot filename
 - `--output_csv`: CSV filename
 - `--extrapolate_298K`: whether to extrapolate to 298 K
-- `--structure`: structure used for conductivity conversion
+- `--structure`: structure used for conductivity conversion. Supported formats: CIF, POSCAR/CONTCAR, and LAMMPS data file
 - `--specie`: oxidized mobile species, for example `Li+`
 - `--conductivity_factor_298K`: optional precomputed conductivity conversion factor
 

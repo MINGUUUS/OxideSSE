@@ -1,4 +1,4 @@
-"""Input/output helpers for CIF and POSCAR-like structure files."""
+"""Input/output helpers for CIF, POSCAR/CONTCAR, and LAMMPS data files."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -21,14 +21,44 @@ def read_atoms(path: PathLike):
     return read(str(path))
 
 
+def read_lammps_data_structure(path: PathLike, atom_style: str = "atomic"):
+    """Read a LAMMPS data file as a pymatgen Structure."""
+    from pymatgen.io.lammps.data import LammpsData
+
+    path = ensure_path(path)
+    if not path.exists():
+        raise FileNotFoundError(path)
+    return LammpsData.from_file(str(path), atom_style=atom_style).structure
+
+
 def read_structure(path: PathLike):
-    """Read CIF or POSCAR/CONTCAR as pymatgen Structure."""
+    """Read CIF, POSCAR/CONTCAR, or LAMMPS data as pymatgen Structure.
+
+    CIF and POSCAR/CONTCAR-like files are first parsed with pymatgen's
+    Structure.from_file.  Files with common LAMMPS data extensions, or files
+    that fail the standard structure parser, are parsed as LAMMPS data files
+    using atom_style="atomic".
+    """
     from pymatgen.core import Structure
 
     path = ensure_path(path)
     if not path.exists():
         raise FileNotFoundError(path)
-    return Structure.from_file(str(path))
+
+    lower_name = path.name.lower()
+    lammps_like = lower_name.endswith((".data", ".lmp", ".lammps"))
+    if lammps_like:
+        return read_lammps_data_structure(path)
+
+    try:
+        return Structure.from_file(str(path))
+    except Exception as structure_exc:
+        try:
+            return read_lammps_data_structure(path)
+        except Exception as lammps_exc:
+            raise ValueError(
+                f"Could not read {path} as CIF/POSCAR/CONTCAR or LAMMPS data."
+            ) from lammps_exc
 
 
 def atoms_to_structure(atoms):

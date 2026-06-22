@@ -89,7 +89,7 @@ def _thermo_cache_label(thermo_type: str | None) -> str:
     return labels.get(thermo_type, str(thermo_type).replace("+", "U"))
 
 
-def _fetch_mp_entries(chemsys: list[str], api_key: str, thermo_type: str | None = "R2SCAN"):
+def _fetch_mp_entries(chemsys: list[str], api_key: str, thermo_type: str | None = "GGA_GGA+U"):
     """Fetch MP entries for a chemical system with an explicit thermo_type filter.
 
     Use mp_api.client.MPRester directly. Older/legacy pymatgen MPRester
@@ -135,7 +135,7 @@ def compute_energy_above_hull_mlp(
     structure: str | Path | Any,
     calculator: str | Any = "7net-0",
     api_key: str | None = None,
-    thermo_type: str | None = "R2SCAN",
+    thermo_type: str | None = "GGA_GGA+U",
     output_csv: str | Path | None = None,
     cache_dir: str | Path | None = ".oxidesse_cache",
     use_cache: bool = True,
@@ -172,6 +172,12 @@ def compute_energy_above_hull_mlp(
         cache = _load_cache(cache_path) if use_cache else {}
 
     mp_entries = _fetch_mp_entries(chemsys_list, api_key=api_key, thermo_type=thermo_type)
+    if not mp_entries:
+        raise ValueError(
+            f"No Materials Project entries were fetched for chemical system {chemical_system} "
+            f"with thermo_type={thermo_type!r}. Try different thermo_type, check your API key and network connection."
+        )
+
     updated_entries = []
     failed_entries: list[str] = []
 
@@ -199,7 +205,11 @@ def compute_energy_above_hull_mlp(
         _save_cache(cache_path, cache)
 
     if not updated_entries:
-        raise ValueError("No MP entries could be recalculated with the MLP calculator.")
+        details = "\n".join(failed_entries[:10])
+        raise ValueError(
+            "Materials Project entries were fetched, but none could be recalculated "
+            "with the MLP calculator. First failed entries:\n" + details
+        )
 
     phase_diagram = PhaseDiagram(updated_entries + [target_entry])
     energy_above_hull = float(phase_diagram.get_e_above_hull(target_entry))
