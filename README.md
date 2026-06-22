@@ -52,7 +52,7 @@ pip install -e .
 
 ## 🧠 SevenNet installation and requirement
 
-OxideSSE utilizes machine-learning potentials for **geometry optimization** and **stability analysis**. The default workflow is based on **SevenNet**, but SevenNet is **not installed automatically** by OxideSSE because GPU, CUDA, PyTorch, and model compatibility can depend strongly on the user's computing environment.
+OxideSSE utilizes machine-learning interatomic potentials for **geometry optimization** and **stability analysis**. The default workflow is based on **SevenNet**, but SevenNet is **not installed automatically** by OxideSSE because GPU, CUDA, PyTorch, and model compatibility can depend strongly on the user's computing environment.
 
 > Install SevenNet separately before using SevenNet-based calculators by referring official documents: 
 > - https://github.com/MDIL-SNU/SevenNet
